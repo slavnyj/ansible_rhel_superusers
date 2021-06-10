@@ -1,0 +1,51 @@
+---
+- hosts: ycslerm
+  tasks:
+    - name: Ensure group superusers exists
+      group:
+        name: superusers
+        state: present
+
+    - name: Make sure we have a wheel group
+      group:
+        name: wheel
+        state: present
+
+    - name: Allow wheel group to have passwordless sudo
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: '^%wheel'
+        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
+
+    - name: Add sudoers user2 to wheel and superusers group
+      user:
+        name: user2
+        groups: wheel, superusers
+        append: yes
+        state: present
+        shell: /bin/bash
+        update_password: on_create
+        createhome: yes
+      register: user2
+
+    - name: Add sudoers user3 to wheel and superusers group
+      user:
+       name: user3
+       groups: wheel, superusers
+       append: yes
+       state: present
+       shell: /bin/bash
+       update_password: on_create
+       createhome: yes
+       
+    # For idempotent we use update_password and next tasks
+    - name: Force user2 to change password
+      shell: chage -d 0 user2
+      when: user2.changed
+
+    - name: Force user3 to change password
+      shell: shell: chage -d 0 user3
+      when: user3.changed
+                                                                 
